@@ -217,7 +217,7 @@
 
                 clearError();
                 generateButtonElement.classList.add('loading');
-                buttonTextElement.textContent = 'Processando...'; // Texto do botão durante o carregamento
+                buttonTextElement.textContent = 'Processando...'; 
                 outputTextElement.innerHTML = '<p class="placeholder">Aguarde, gerando o cenário...</p>';
 
                 const systemPrompt = `Você é um assistente especializado em Behavior-Driven Development (BDD) e Gherkin.
@@ -321,7 +321,22 @@ Cenário: Cooperado altera limite com sucesso após login e validação de unito
 Agora, transforme a seguinte entrada do usuário em TEXTO PURO Gherkin, adaptando o nível de detalhe, a fraseologia, a perspectiva, E CORRIGINDO ERROS DE ORTOGRAFIA/GRAMÁTICA EM PORTUGUÊS, e gerando um TÍTULO DE CENÁRIO CONCISO E FOCO NO OBJETIVO PRINCIPAL, conforme a complexidade da entrada e os exemplos fornecidos:
 "${userInput}"`;
 
-                const apiKey = ""; 
+                // ATENÇÃO MÁXIMA: RISCO DE SEGURANÇA AO COLOCAR CHAVES DE API DIRETAMENTE NO CÓDIGO DO CLIENTE!
+                // Esta linha é onde você colocaria sua chave de API Gemini se estivesse testando localmente
+                // ou se estivesse disposto a correr o risco EXTREMO de expô-la publicamente no GitHub Pages.
+                // NÃO FAÇA ISSO EM UM REPOSITÓRIO PÚBLICO PARA PRODUÇÃO OU USO PROLONGADO.
+                // SUA CHAVE SERÁ ROUBADA E USADA INDEVIDAMENTE.
+                // Para testes MUITO rápidos e limitados, e se você remover a chave IMEDIATAMENTE DEPOIS:
+                const apiKey = "AIzaSyBFf-iK9nmxS-G80X8kYLlTgkKgJUUSsH4"; // CHAVE FORNECIDA PELO USUÁRIO - RISCO DE SEGURANÇA!
+
+                // Verificação para alertar se a chave placeholder ainda estiver lá (embora agora estejamos usando a chave fornecida)
+                if (apiKey === "SUA_CHAVE_API_GEMINI_AQUI" || apiKey === "") {
+                    showError("Chave de API não configurada corretamente no código. A funcionalidade de geração não funcionará.");
+                    generateButtonElement.classList.remove('loading');
+                    buttonTextElement.textContent = '✨ Gerar Cenário';
+                    return;
+                }
+                
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 
                 let chatHistory = [{ role: "user", parts: [{ text: systemPrompt }] }];
@@ -357,7 +372,7 @@ Agora, transforme a seguinte entrada do usuário em TEXTO PURO Gherkin, adaptand
                     showError(`Erro ao processar: ${error.message}. Verifique o console para mais detalhes.`);
                 } finally {
                     generateButtonElement.classList.remove('loading');
-                    buttonTextElement.textContent = '✨ Gerar Cenário'; // Texto do botão de volta ao original
+                    buttonTextElement.textContent = '✨ Gerar Cenário'; 
                 }
             });
         });
