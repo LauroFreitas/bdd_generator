@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Cenários em BDD</title>
+    <style>
+        /* Estilos CSS */
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #eef1f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 25px 35px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 750px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-bottom: 2px solid #bdc3c7;
+            padding-bottom: 8px;
+            font-size: 1.4em;
+        }
+
+        p, label {
+            margin-bottom: 10px;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .input-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1em;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+            outline: none;
+        }
+
+        button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: relative; /* Para o spinner */
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        button.loading .button-text {
+            visibility: hidden;
+        }
+
+        button .spinner {
+            visibility: hidden;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -10px;
+            margin-left: -10px;
+        }
+
+        button.loading .spinner {
+            visibility: visible;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .output-section {
+            margin-top: 30px;
+        }
+
+        #outputText {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            min-height: 150px; 
+            border: 1px solid #e0e0e0;
+            white-space: pre-wrap; 
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+            line-height: 1.5; 
+            text-align: left; 
+        }
+
+        #outputText .placeholder {
+            color: #888;
+            font-style: italic;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        .error-message {
+            color: #c0392b; 
+            background-color: #fdecea;
+            border: 1px solid #e74c3c;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Gerador de Cenários em BDD</h1>
+        <p>Descreva seu cenário de teste em linguagem natural. Esta ferramenta ajudará a estruturá-lo no formato Gherkin.</p>
+
+        <div class="input-section">
+            <label for="inputText">Descrição do Cenário:</label>
+            <textarea id="inputText" rows="5" placeholder="Ex: O usuário acessa a tela de login, informa credenciais válidas e clica em entrar, então é redirecionado para o painel."></textarea>
+        </div>
+
+        <button id="generateButton">
+            <span class="button-text">✨ Gerar Cenário</span>
+            <div class="spinner"></div>
+        </button>
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+
+        <div class="output-section">
+            <h2>Resultado Gerado:</h2>
+            <pre id="outputText"><p class="placeholder">Seu cenário formatado aparecerá aqui...</p></pre>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputTextElement = document.getElementById('inputText');
+            const generateButtonElement = document.getElementById('generateButton');
+            const buttonTextElement = generateButtonElement.querySelector('.button-text');
+            const outputTextElement = document.getElementById('outputText'); 
+            const errorMessageDivElement = document.getElementById('errorMessage');
+
+            function showError(message) {
+                errorMessageDivElement.textContent = message;
+                errorMessageDivElement.style.display = 'block';
+                outputTextElement.innerHTML = '<p class="placeholder">Falha ao gerar cenário.</p>';
+            }
+
+            function clearError() {
+                errorMessageDivElement.textContent = '';
+                errorMessageDivElement.style.display = 'none';
+            }
+            
+            generateButtonElement.addEventListener('click', async () => {
+                const userInput = inputTextElement.value.trim();
+                if (userInput === "") {
+                    showError('Por favor, insira uma descrição do cenário.');
+                    return;
+                }
+
+                clearError();
+                generateButtonElement.classList.add('loading');
+                buttonTextElement.textContent = 'Processando...'; // Texto do botão durante o carregamento
+                outputTextElement.innerHTML = '<p class="placeholder">Aguarde, gerando o cenário...</p>';
+
+                const systemPrompt = `Você é um assistente especializado em Behavior-Driven Development (BDD) e Gherkin.
+Sua tarefa é transformar uma descrição de cenário de teste em linguagem natural fornecida pelo usuário em um cenário BDD bem estruturado, no formato Gherkin, em Português do Brasil.
+O resultado deve ser TEXTO PURO, pronto para exibição, com a indentação correta (2 espaços para cada nível aninhado de Dado/Quando/Então/E) e sem tags HTML.
+
+**IMPORTANTE: Adapte o nível de detalhe, a fraseologia e a perspectiva (primeira ou terceira pessoa) do cenário Gherkin à complexidade e ao estilo da entrada do usuário. Além disso, CORRIJA erros de ortografia e gramática em português presentes na entrada do usuário ao gerar os passos do cenário.**
+
+* **Para entradas CURTAS e DIRETAS (1-3 frases simples):**
+    * Gere um cenário CONCISO e DIRETO.
+    * **Título do Cenário (\`Cenário:\`):** Deve ser uma descrição CURTA e FOCADA NO OBJETIVO PRINCIPAL da sequência de ações, em vez de listar todas as ações. Se o usuário descreve um fluxo (ex: entrar, cadastrar, comprar), o título deve resumir esse fluxo (ex: "Efetuar compra após cadastro"). Use palavras-chave da entrada do usuário para formar este título conciso.
+    * Os passos \`Dado\`, \`Quando\`, \`Então\`, \`E\` devem refletir MUITO DE PERTO a fraseologia e a perspectiva (primeira pessoa, se usada) do usuário, APÓS A CORREÇÃO ORTOGRÁFICA/GRAMATICAL. Evite adicionar palavras, formalismos ou detalhes não explícitos. Mantenha a simplicidade.
+* **Para entradas MAIS LONGAS e DESCRITIVAS, ou que não usam primeira pessoa:**
+    * Você pode elaborar mais, inferir pré-condições, usar uma perspectiva mais formal (terceira pessoa ou impessoal, ex: "O usuário...", "O sistema..."), adicionar exemplos de dados concretos (entre aspas) e múltiplas verificações, conforme o exemplo mais longo abaixo. O título do cenário ainda deve buscar ser representativo do objetivo geral.
+
+**Estilo e Concordância para BDD em Português:**
+* Mantenha a concordância verbal e nominal correta.
+* Use frases claras e objetivas.
+* Palavras-chave Gherkin em português: \`Cenário:\`, \`Dado\`, \`Quando\`, \`Então\`, \`E\`, \`Mas\`. Priorize o uso destas palavras-chave no output.
+
+---
+Exemplo de Transformação (ENTRADA CURTA, foco em TÍTULO CONCISO e fraseologia do usuário):
+
+Entrada do Usuário:
+Entro no app, me cadastro, faço uma compra e incluio no carrinho depois valido o carrinho
+
+Saída Esperada (TEXTO PURO, Gherkin com título conciso):
+Cenário: Efetuar compra e validar carrinho no app
+  Dado que eu entro no app
+  Quando me cadastro
+  E faço uma compra
+  E incluo no carrinho
+  Então valido o carrinho
+---
+Exemplo de Transformação (ENTRADA CURTA, primeira pessoa, com erro ortográfico - FOCO EM CORREÇÃO, SIMPLICIDADE E FRASEOLOGIA DO USUÁRIO):
+
+Entrada do Usuário:
+Entro no site do reclame aqui, incluio uma mensagem de reclamação e depois valido se a mensagem foi postaasd
+
+Saída Esperada (TEXTO PURO, Gherkin conciso, direto E CORRIGIDO):
+Cenário: Postar e validar reclamação no Reclame Aqui
+  Dado que eu entro no site do Reclame Aqui
+  Quando incluo uma mensagem de reclamação
+  Então valido se a mensagem foi postada
+---
+Exemplo de Transformação (ENTRADA CURTA, primeira pessoa - FOCO EM SIMPLICIDADE E FRASEOLOGIA DO USUÁRIO):
+
+Entrada do Usuário:
+Entro no APP e me cadastro então valido o cadastro
+
+Saída Esperada (TEXTO PURO, Gherkin conciso e direto):
+Cenário: Cadastrar e validar no app
+  Dado eu entro no app
+  E faço um cadastro no app
+  Então valido o meu cadastro
+---
+Exemplo de Transformação (ENTRADA CURTA, primeira pessoa, com detalhes específicos - FOCO EM SIMPLICIDADE E FRASEOLOGIA DO USUÁRIO):
+
+Entrada do Usuário:
+eu logo com um usuario, faço um pix com a chave QRCode Copia e Cola e então deve ser apresentada a mensagem de "Pix realizado com sucesso!" e deve aparecer o comprovante na tela
+
+Saída Esperada (TEXTO PURO, Gherkin conciso e direto):
+Cenário: Realizar Pix com QRCode Copia e Cola e verificar comprovante
+  Dado que eu logo com um usuario
+  Quando faço um pix com a chave QRCode Copia e Cola
+  Então deve ser apresentada a mensagem de "Pix realizado com sucesso!"
+  E deve aparecer o comprovante na tela
+---
+Exemplo de Transformação (ENTRADA CURTA, primeira pessoa, mais simples - FOCO EM SIMPLICIDADE E FRASEOLOGIA DO USUÁRIO):
+
+Entrada do Usuário:
+Entro no app, crio uma conta e faço um pix, valido o pix
+
+Saída Esperada (TEXTO PURO, Gherkin conciso e direto):
+Cenário: Criar conta, fazer e validar pix no app
+  Dado eu entro no app
+  Quando crio uma conta
+  E faço um pix
+  Então valido o pix
+---
+Exemplo de Transformação (ENTRADA MAIS DESCRITIVA, perspectiva de terceira pessoa implícita):
+
+Entrada do Usuário:
+O cooperado loga no app, inclui o unitoken e altera o limite e valida se o limite foi alterado
+
+Saída Esperada (TEXTO PURO, Gherkin detalhado, terceira pessoa):
+Cenário: Cooperado altera limite com sucesso após login e validação de unitoken
+  Dado que o cooperado possui credenciais de acesso válidas
+  E o cooperado está na tela de login do aplicativo
+  E o cooperado possui um unitoken ativo e válido para uso
+  Quando ele informa suas credenciais (usuário e senha) e clica no botão "Entrar"
+  E ele insere o código do unitoken quando solicitado
+  E ele navega para a funcionalidade de "Alteração de Limites"
+  E ele informa o novo valor de limite desejado como "R$ 5.000,00"
+  E ele confirma a operação de alteração de limite
+  Então o sistema deve exibir a mensagem de confirmação "Limite atualizado com sucesso!"
+  E ao consultar o detalhe do limite, o valor exibido deve ser "R$ 5.000,00"
+  E o sistema deve registrar um log da alteração de limite para o cooperado
+---
+
+Agora, transforme a seguinte entrada do usuário em TEXTO PURO Gherkin, adaptando o nível de detalhe, a fraseologia, a perspectiva, E CORRIGINDO ERROS DE ORTOGRAFIA/GRAMÁTICA EM PORTUGUÊS, e gerando um TÍTULO DE CENÁRIO CONCISO E FOCO NO OBJETIVO PRINCIPAL, conforme a complexidade da entrada e os exemplos fornecidos:
+"${userInput}"`;
+
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                let chatHistory = [{ role: "user", parts: [{ text: systemPrompt }] }];
+                const payload = { contents: chatHistory };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('Erro da API:', errorData);
+                        throw new Error(`Falha na API: ${errorData.error?.message || response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const aiResponseText = result.candidates[0].content.parts[0].text;
+                        outputTextElement.textContent = aiResponseText; 
+                    } else {
+                        console.error('Resposta inesperada da ferramenta:', result);
+                        throw new Error('Não foi possível obter uma resposta válida da ferramenta de formatação.');
+                    }
+
+                } catch (error) { 
+                    console.error('Erro ao chamar a ferramenta de formatação:', error);
+                    showError(`Erro ao processar: ${error.message}. Verifique o console para mais detalhes.`);
+                } finally {
+                    generateButtonElement.classList.remove('loading');
+                    buttonTextElement.textContent = '✨ Gerar Cenário'; // Texto do botão de volta ao original
+                }
+            });
+        });
+    </script>
+</body>
+</html>
